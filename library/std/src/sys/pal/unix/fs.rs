@@ -546,7 +546,7 @@ impl FileAttr {
         SystemTime::new(self.stat.st_atim.tv_sec as i64, self.stat.st_atim.tv_nsec as i64)
     }
 
-    #[cfg(any(target_os = "freebsd", target_os = "openbsd", target_vendor = "apple"))]
+    #[cfg(any(target_os = "freebsd", target_os = "openbsd", target_vendor = "apple", target_os = "cygwin"))]
     pub fn created(&self) -> io::Result<SystemTime> {
         SystemTime::new(self.stat.st_birthtime as i64, self.stat.st_birthtime_nsec as i64)
     }
@@ -556,6 +556,7 @@ impl FileAttr {
         target_os = "openbsd",
         target_os = "vita",
         target_vendor = "apple",
+        target_os = "cygwin",
     )))]
     pub fn created(&self) -> io::Result<SystemTime> {
         cfg_has_statx! {
@@ -975,6 +976,7 @@ impl DirEntry {
 
     #[cfg(any(
         target_os = "linux",
+        target_os = "cygwin",
         target_os = "emscripten",
         target_os = "android",
         target_os = "solaris",
@@ -1234,6 +1236,7 @@ impl File {
         #[cfg(any(
             target_os = "freebsd",
             target_os = "linux",
+            target_os = "cygwin",
             target_os = "android",
             target_os = "netbsd",
             target_os = "openbsd",
@@ -1247,6 +1250,7 @@ impl File {
             target_os = "android",
             target_os = "freebsd",
             target_os = "linux",
+            target_os = "cygwin",
             target_os = "netbsd",
             target_os = "openbsd",
             target_os = "nto",

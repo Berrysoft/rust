@@ -49,6 +49,7 @@ const READ_LIMIT: usize = if cfg!(target_vendor = "apple") {
     target_os = "netbsd",
     target_os = "openbsd",
     target_vendor = "apple",
+    target_os = "cygwin",
 ))]
 const fn max_iov() -> usize {
     libc::IOV_MAX as usize
@@ -502,6 +503,7 @@ impl FileDesc {
         target_os = "fuchsia",
         target_os = "l4re",
         target_os = "linux",
+        target_os = "cygwin",
         target_os = "haiku",
         target_os = "redox",
         target_os = "vxworks",
@@ -524,6 +526,7 @@ impl FileDesc {
         target_os = "fuchsia",
         target_os = "l4re",
         target_os = "linux",
+        target_os = "cygwin",
         target_os = "haiku",
         target_os = "redox",
         target_os = "vxworks",

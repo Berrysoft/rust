@@ -46,6 +46,7 @@ extern "C" {
         any(
             target_os = "netbsd",
             target_os = "openbsd",
+            target_os = "cygwin",
             target_os = "android",
             target_os = "redox",
             target_os = "nuttx",
@@ -397,6 +398,7 @@ pub fn current_exe() -> io::Result<PathBuf> {
 
 #[cfg(any(
     target_os = "linux",
+    target_os = "cygwin",
     target_os = "hurd",
     target_os = "android",
     target_os = "nuttx",
