@@ -85,8 +85,7 @@ dependencies = [
 [[package]]
 name = "cc"
 version = "1.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1aeb932158bd710538c73702db6945cb68a8fb08c519e6e12706b94263b36db8"
+source = "git+https://github.com/Berrysoft/cc-rs.git?branch=dev%2Fcygwin#2c9d36dac826e9a44d8e7e4de4db857fd0045304"
 dependencies = [
  "shlex",
 ]
