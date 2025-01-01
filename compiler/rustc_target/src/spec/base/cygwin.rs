@@ -37,7 +37,7 @@ fn opts(env: CygwinVariant) -> TargetOptions {
         cygwin_libs,
     );
     let target_env = match env {
-        CygwinVariant::Cygwin => "cygwin",
+        CygwinVariant::Cygwin => "",
         CygwinVariant::MSYS2 => "msys2",
     };
     TargetOptions {
