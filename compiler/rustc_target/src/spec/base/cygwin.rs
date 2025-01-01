@@ -4,6 +4,7 @@ use crate::spec::{
     Cc, DebuginfoKind, LinkerFlavor, Lld, SplitDebuginfo, Target, TargetOptions, cvs,
 };
 
+#[derive(Clone, Copy)]
 pub(crate) enum CygwinVariant {
     Cygwin,
     MSYS2,
