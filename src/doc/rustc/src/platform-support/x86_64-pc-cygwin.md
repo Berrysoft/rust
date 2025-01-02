@@ -21,7 +21,7 @@ To gain high performance, users are recommended to use *more* native targets, e.
 
 ## Building the target
 
-For cross-compilation I recommend my fork of [llvm](https://github.com/Berrysoft/llvm-project/tree/dev/cygwin). It fixes the LLVM codegen on importing external global variables from DLLs.
+For cross-compilation you want LLVM with [llvm/llvm-project#121439](https://github.com/llvm/llvm-project/pull/121439) applied to fix the LLVM codegen on importing external global variables from DLLs.
 No native builds on Cygwin or MSYS2 now. It should be possible theoretically though, but might need a lot of patches.
 
 ## Building Rust programs
