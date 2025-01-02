@@ -3,8 +3,10 @@
 **Tier: 3**
 
 Windows targets supporting Cygwin and MSYS2.
-A native developer *should not* use `*-cygwin-*` target unless they really know what they're doing.
-They should use `x86_64-pc-windows-*` instead if they want *native* Windows.
+The `*-cygwin-*` targets are **not** intended as native targets for applications,
+a developer writing Windows applications should use the `*-pc-windows-*` targets instead, which are *native* Windows.
+
+Cygwin is only intended as an emulation layer for UNIX-only programs which do not support the native Windows targets.
 
 ## Target maintainers
 
