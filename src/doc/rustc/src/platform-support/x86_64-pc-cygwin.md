@@ -6,7 +6,7 @@ Windows targets supporting Cygwin and MSYS2.
 The `*-cygwin-*` targets are **not** intended as native targets for applications,
 a developer writing Windows applications should use the `*-pc-windows-*` targets instead, which are *native* Windows.
 
-Cygwin is only intended as an emulation layer for UNIX-only programs which do not support the native Windows targets.
+Cygwin is only intended as an emulation layer for Unix-only programs which do not support the native Windows targets.
 
 ## Target maintainers
 
