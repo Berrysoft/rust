@@ -2,8 +2,8 @@
 
 **Tier: 3**
 
-Windows targets supporting Cygwin and MSYS2.
-The `*-cygwin-*` targets are **not** intended as native targets for applications,
+Windows targets supporting Cygwin.
+The `*-cygwin` targets are **not** intended as native target for applications,
 a developer writing Windows applications should use the `*-pc-windows-*` targets instead, which are *native* Windows.
 
 Cygwin is only intended as an emulation layer for Unix-only programs which do not support the native Windows targets.
@@ -14,19 +14,14 @@ Cygwin is only intended as an emulation layer for Unix-only programs which do no
 
 ## Requirements
 
-This target is cross compiled. Different `target_env` needs different linker:
-- `x86_64-pc-cygwin`: `x86_64-pc-cygwin-gcc`
-- `x86_64-pc-cygwin-msys2`: `x86_64-pc-msys-gcc`
+This target is cross compiled. It needs `x86_64-pc-cygwin-gcc` as linker.
 
-The difference between two targets are small.
-The `target_os` of these targets are `cygwin`, and they are `unix`.
-
-To gain high performance, users are recommended to use *more* native targets, e.g., `x86_64-pc-windows-*`.
+The `target_os` of the target is `cygwin`, and it is `unix`.
 
 ## Building the target
 
-For cross-compilation you want LLVM with [llvm/llvm-project#121439](https://github.com/llvm/llvm-project/pull/121439) applied to fix the LLVM codegen on importing external global variables from DLLs.
-No native builds on Cygwin or MSYS2 now. It should be possible theoretically though, but might need a lot of patches.
+For cross-compilation you want LLVM with [llvm/llvm-project#121439 (merged)](https://github.com/llvm/llvm-project/pull/121439) applied to fix the LLVM codegen on importing external global variables from DLLs.
+No native builds on Cygwin now. It should be possible theoretically though, but might need a lot of patches.
 
 ## Building Rust programs
 
@@ -37,8 +32,8 @@ this target, you will either need to build Rust with the target enabled (see
 
 ## Testing
 
-Created binaries work fine on Windows with Cygwin or MSYS2.
+Created binaries work fine on Windows with Cygwin.
 
 ## Cross-compilation toolchains and C code
 
-Compatible C code can be built with GCC shipped with Cygwin or MSYS2. Clang is untested.
+Compatible C code can be built with GCC shipped with Cygwin. Clang is untested.

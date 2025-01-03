@@ -1,16 +1,8 @@
 use std::borrow::Cow;
 
-use crate::spec::{
-    Cc, DebuginfoKind, LinkerFlavor, Lld, SplitDebuginfo, Target, TargetOptions, cvs,
-};
+use crate::spec::{Cc, DebuginfoKind, LinkerFlavor, Lld, SplitDebuginfo, TargetOptions, cvs};
 
-#[derive(Clone, Copy)]
-pub(crate) enum CygwinVariant {
-    Cygwin,
-    MSYS2,
-}
-
-fn opts(env: CygwinVariant) -> TargetOptions {
+pub(crate) fn opts() -> TargetOptions {
     let mut pre_link_args = TargetOptions::link_args(LinkerFlavor::Gnu(Cc::No, Lld::No), &[
         // FIXME: Disable ASLR for now to fix relocation error
         "--disable-dynamicbase",
@@ -23,12 +15,7 @@ fn opts(env: CygwinVariant) -> TargetOptions {
         "-Wl,--disable-dynamicbase",
         "-Wl,--enable-auto-image-base",
     ]);
-    // cygwin runtime lib
-    let clib = match env {
-        CygwinVariant::Cygwin => "-lcygwin",
-        CygwinVariant::MSYS2 => "-lmsys-2.0",
-    };
-    let cygwin_libs = &[clib, "-lgcc", clib, "-luser32", "-lkernel32", "-lgcc_s"];
+    let cygwin_libs = &["-lcygwin", "-lgcc", "-lcygwin", "-luser32", "-lkernel32", "-lgcc_s"];
     let mut late_link_args =
         TargetOptions::link_args(LinkerFlavor::Gnu(Cc::No, Lld::No), cygwin_libs);
     crate::spec::add_link_args(
@@ -36,14 +23,9 @@ fn opts(env: CygwinVariant) -> TargetOptions {
         LinkerFlavor::Gnu(Cc::Yes, Lld::No),
         cygwin_libs,
     );
-    let target_env = match env {
-        CygwinVariant::Cygwin => "",
-        CygwinVariant::MSYS2 => "msys2",
-    };
     TargetOptions {
         os: "cygwin".into(),
         vendor: "pc".into(),
-        env: target_env.into(),
         // FIXME(#13846) this should be enabled for cygwin
         function_sections: false,
         linker: Some("gcc".into()),
@@ -65,44 +47,5 @@ fn opts(env: CygwinVariant) -> TargetOptions {
         debuginfo_kind: DebuginfoKind::Pdb,
         supported_split_debuginfo: Cow::Borrowed(&[SplitDebuginfo::Off]),
         ..Default::default()
-    }
-}
-
-pub(crate) fn x86_64_target(env: CygwinVariant) -> Target {
-    let mut base = opts(env);
-    base.cpu = "x86-64".into();
-    // FIXME: Disable ASLR for now to fix relocation error
-    base.add_pre_link_args(LinkerFlavor::Gnu(Cc::No, Lld::No), &[
-        "-m",
-        "i386pep",
-        "--disable-high-entropy-va",
-    ]);
-    base.add_pre_link_args(LinkerFlavor::Gnu(Cc::Yes, Lld::No), &[
-        "-m64",
-        "-Wl,--disable-high-entropy-va",
-    ]);
-    base.max_atomic_width = Some(64);
-    let linker = match env {
-        CygwinVariant::Cygwin => "x86_64-pc-cygwin-gcc",
-        CygwinVariant::MSYS2 => "x86_64-pc-msys-gcc",
-    };
-    let description = match env {
-        CygwinVariant::Cygwin => "64-bit x86 Cygwin",
-        CygwinVariant::MSYS2 => "64-bit x86 MSYS2",
-    };
-    base.linker = Some(linker.into());
-    Target {
-        llvm_target: "x86_64-pc-cygwin".into(),
-        pointer_width: 64,
-        data_layout:
-            "e-m:w-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-f80:128-n8:16:32:64-S128".into(),
-        arch: "x86_64".into(),
-        options: base,
-        metadata: crate::spec::TargetMetadata {
-            description: Some(description.into()),
-            tier: Some(3),
-            host_tools: Some(false),
-            std: Some(true),
-        },
     }
 }
