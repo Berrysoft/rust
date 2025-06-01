@@ -299,8 +299,8 @@ where
 ////////////////////////////////////////////////////////////////////////////////
 
 /// Says whether the first byte after the prefix is a separator.
-fn has_physical_root(s: &[u8], prefix: Option<Prefix<'_>>) -> bool {
-    let path = if let Some(p) = prefix { &s[p.len()..] } else { s };
+fn has_physical_root(s: &[u8], prefix: Option<Prefix<'_>>, pre_prefix_len: usize) -> bool {
+    let path = if let Some(p) = prefix { &s[p.len() + pre_prefix_len..] } else { s };
     !path.is_empty() && is_sep_byte(path[0])
 }
 
@@ -600,6 +600,9 @@ pub struct Components<'a> {
     // The prefix as it was originally parsed, if any
     prefix: Option<Prefix<'a>>,
 
+    // The length of `./` in `//./` on Cygwin
+    pre_prefix_len: usize,
+
     // true if path *physically* has a root separator; for most Windows
     // prefixes, it may have a "logical" root separator for the purposes of
     // normalization, e.g., \\server\share == \\server\share\.
@@ -643,7 +646,7 @@ impl<'a> Components<'a> {
     // how long is the prefix, if any?
     #[inline]
     fn prefix_len(&self) -> usize {
-        self.prefix.as_ref().map(Prefix::len).unwrap_or(0)
+        self.prefix.as_ref().map(Prefix::len).unwrap_or(0) + self.pre_prefix_len
     }
 
     #[inline]
@@ -989,7 +992,14 @@ impl FusedIterator for Components<'_> {}
 impl<'a> PartialEq for Components<'a> {
     #[inline]
     fn eq(&self, other: &Components<'a>) -> bool {
-        let Components { path: _, front: _, back: _, has_physical_root: _, prefix: _ } = self;
+        let Components {
+            path: _,
+            front: _,
+            back: _,
+            has_physical_root: _,
+            prefix: _,
+            pre_prefix_len: _,
+        } = self;
 
         // Fast path for exact matches, e.g. for hashmap lookups.
         // Don't explicitly compare the prefix or has_physical_root fields since they'll
@@ -999,6 +1009,7 @@ impl<'a> PartialEq for Components<'a> {
             && self.back == State::Body
             && other.back == State::Body
             && self.prefix_verbatim() == other.prefix_verbatim()
+            && self.pre_prefix_len == other.pre_prefix_len
         {
             // possible future improvement: this could bail out earlier if there were a
             // reverse memcmp/bcmp comparing back to front
@@ -1315,8 +1326,17 @@ impl PathBuf {
             need_sep = false
         }
 
+        let need_clear = if cfg!(target_os = "cygwin") {
+            // If path is absolute and its prefix is none, it is like `/foo`,
+            // and will be handled below.
+            path.prefix().is_some()
+        } else {
+            // On Unix: prefix is always None.
+            path.is_absolute() || path.prefix().is_some()
+        };
+
         // absolute `path` replaces `self`
-        if path.is_absolute() || path.prefix().is_some() {
+        if need_clear {
             self.inner.truncate(0);
 
         // verbatim paths need . and .. removed
@@ -2862,11 +2882,15 @@ impl Path {
     /// [`CurDir`]: Component::CurDir
     #[stable(feature = "rust1", since = "1.0.0")]
     pub fn components(&self) -> Components<'_> {
-        let prefix = parse_prefix(self.as_os_str());
+        let (pre_prefix_len, prefix) = match parse_prefix(self.as_os_str()) {
+            Some((pre_prefix_len, prefix)) => (pre_prefix_len, Some(prefix)),
+            None => (0, None),
+        };
         Components {
             path: self.as_u8_slice(),
             prefix,
-            has_physical_root: has_physical_root(self.as_u8_slice(), prefix),
+            pre_prefix_len,
+            has_physical_root: has_physical_root(self.as_u8_slice(), prefix, pre_prefix_len),
             front: State::Prefix,
             back: State::Body,
         }
@@ -3330,9 +3354,9 @@ impl Hash for Path {
     fn hash<H: Hasher>(&self, h: &mut H) {
         let bytes = self.as_u8_slice();
         let (prefix_len, verbatim) = match parse_prefix(&self.inner) {
-            Some(prefix) => {
+            Some((pre_prefix_len, prefix)) => {
                 prefix.hash(h);
-                (prefix.len(), prefix.is_verbatim())
+                (prefix.len() + pre_prefix_len, prefix.is_verbatim())
             }
             None => (0, false),
         };
@@ -3615,6 +3639,9 @@ impl Error for NormalizeError {}
 /// paths, this is currently equivalent to calling
 /// [`GetFullPathNameW`][windows-path].
 ///
+/// On Cygwin, this is currently equivalent to calling [`cygwin_conv_path`][cygwin-path]
+/// with mode `CCP_WIN_A_TO_POSIX`.
+///
 /// Note that these [may change in the future][changes].
 ///
 /// # Errors
@@ -3667,11 +3694,36 @@ impl Error for NormalizeError {}
 /// # fn main() {}
 /// ```
 ///
+/// ## Cygwin paths
+///
+/// ```
+/// # #[cfg(target_os = "cygwin")]
+/// fn main() -> std::io::Result<()> {
+///     use std::path::{self, Path};
+///
+///     // Relative to absolute
+///     let absolute = path::absolute("foo/./bar")?;
+///     assert!(absolute.ends_with(r"foo/bar"));
+///
+///     // Windows absolute to absolute
+///     let absolute = path::absolute(r"C:\foo//test\..\./bar.rs")?;
+///     assert!(absolute.ends_with("/c/foo/bar.rs"));
+///
+///     // POSIX absolute to absolute
+///     let absolute = path::absolute("/foo//test/.././bar.rs")?;
+///     assert_eq!(absolute, Path::new("/foo//test/.././bar.rs"));
+///     Ok(())
+/// }
+/// # #[cfg(not(target_os = "cygwin"))]
+/// # fn main() {}
+/// ```
+///
 /// Note that this [may change in the future][changes].
 ///
 /// [changes]: io#platform-specific-behavior
 /// [posix-semantics]: https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap04.html#tag_04_13
 /// [windows-path]: https://docs.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-getfullpathnamew
+/// [cygwin-path]: https://cygwin.com/cygwin-api/func-cygwin-conv-path.html
 #[stable(feature = "absolute_path", since = "1.79.0")]
 pub fn absolute<P: AsRef<Path>>(path: P) -> io::Result<PathBuf> {
     let path = path.as_ref();

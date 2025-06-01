@@ -86,7 +86,7 @@ fn verbatim() {
 }
 
 fn parse_prefix(path: &str) -> Option<Prefix<'_>> {
-    super::parse_prefix(OsStr::new(path))
+    super::parse_prefix(OsStr::new(path)).map(|(_, p)| p)
 }
 
 #[test]

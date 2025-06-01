@@ -13,7 +13,7 @@ pub fn is_verbatim_sep(b: u8) -> bool {
 }
 
 #[inline]
-pub fn parse_prefix(_: &OsStr) -> Option<Prefix<'_>> {
+pub fn parse_prefix(_: &OsStr) -> Option<(usize, Prefix<'_>)> {
     None
 }
 
